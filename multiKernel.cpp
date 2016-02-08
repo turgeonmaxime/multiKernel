@@ -48,14 +48,18 @@ SEXP multiKernel(SEXP Ys, SEXP Zs, SEXP Ks, double tau) {
     newLS = computeLeastSq(Y, K, alpha_mat, Z, B);
   }
   
+  double BIC = 2 * newLS + log(n) * as_scalar(accu(B > 0) + accu(alpha_mat > 0));
+  
   return Rcpp::List::create(
     Rcpp::Named("alpha") = alpha_mat, 
     Rcpp::Named("B") = B,
-    Rcpp::Named("iter") = counter);
+    Rcpp::Named("iter") = counter,
+    Rcpp::Named("LS") = newLS,
+    Rcpp::Named("BIC") = BIC);
 }
 
 double computeLeastSq(mat Y, mat K, mat alpha, mat Z, mat B) {
-  double res = - 0.5 * norm(Y - K * alpha - Z * B, "fro");
+  double res = 0.5 * norm(Y - K * alpha - Z * B, "fro");
   
   return res;
 }

@@ -15,4 +15,11 @@ fitMultiKernel2(Y, X, tau = 1)
 compare <- microbenchmark(fitMultiKernel(Y, X, tau = 1),
                           fitMultiKernel2(Y, X, tau = 1),
                           times = 100)
-compare 
+compare
+
+# Cross-validation---
+foo1 <- selectMultiKernel(Y, X, tau_seq = seq(0.1, 1, length.out = 10))
+which.min(sapply(foo1, function(list) list$LS))
+
+foo2 <- selectMultiKernel2(Y, X, tau_seq = seq(0.1, 1, length.out = 10))
+which.min(sapply(foo2, function(list) list$LS))
