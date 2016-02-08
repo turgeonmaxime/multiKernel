@@ -5,6 +5,8 @@ using namespace arma;
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
+double computeLeastSq(mat Y, mat K, mat alpha, mat Z, mat B);
+
 // [[Rcpp::export("multiKernel_cpp")]]
 SEXP multiKernel(SEXP Ys, SEXP Zs, SEXP Ks, double tau) {
   Rcpp::NumericMatrix Yr(Ys);                 // creates Rcpp matrix from SEXP
@@ -26,7 +28,14 @@ SEXP multiKernel(SEXP Ys, SEXP Zs, SEXP Ks, double tau) {
   tuning_mat.diag() = tuning_vect;
   arma::mat weight_mat = inv(K + tuning_mat);
   
-  for(int i = 0; i < 1000; i++) {
+  // Initialize loss value
+  double currentLS = 1.0;
+  double newLS = 0.0;
+  int counter = 0;
+  
+  while(fabs(currentLS - newLS) > 0.00000001 && counter < 10000) {
+    counter++;
+    currentLS = newLS;
     // Update B using QR-decomposition
     qr_econ(Q, R, Z);
     B = inv(R) * trans(Q) * (Y - K * alpha_mat);
@@ -35,9 +44,18 @@ SEXP multiKernel(SEXP Ys, SEXP Zs, SEXP Ks, double tau) {
     for(int j = 0; j < p; j++) {
       alpha_mat.col(j) = weight_mat * (Y.col(j) - Z * B.col(j));
     }
+    
+    newLS = computeLeastSq(Y, K, alpha_mat, Z, B);
   }
   
   return Rcpp::List::create(
     Rcpp::Named("alpha") = alpha_mat, 
-    Rcpp::Named("B") = B) ;
+    Rcpp::Named("B") = B,
+    Rcpp::Named("iter") = counter);
+}
+
+double computeLeastSq(mat Y, mat K, mat alpha, mat Z, mat B) {
+  double res = - 0.5 * norm(Y - K * alpha - Z * B, "fro");
+  
+  return res;
 }

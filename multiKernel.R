@@ -13,6 +13,7 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
   
   alpha_mat <- matrix(0, nrow = n, ncol = p)
+  B <- matrix(0, nrow=ncol(Z_mat), ncol=p)
   
   # K <- NULL
   kernel <- match.arg(kernel)
@@ -23,7 +24,13 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
   
   weight_mat <- solve(K + diag(tau, ncol = n, nrow = n))
   
-  for(i in 1:1000) {
+  currentLS <- 1
+  newLS <- 0
+  counter <- 0
+  while(counter < 10000 && abs(currentLS - newLS) > 1e-8) {
+    counter <- counter + 1
+    currentLS <- newLS
+    
     # Update B
     B <- lm.fit(x = Z_mat, y = (response - K %*% alpha_mat))$coefficients
     
@@ -31,9 +38,12 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
     for (j in 1:p) {
       alpha_mat[, j] <- weight_mat %*% (response[, j] - Z_mat %*% B[, j])
     }
+    
+    newLS <- computeLeastSq(response, K, alpha_mat, Z_mat, B)
+    
   }
   
-  return(list(alpha = alpha_mat, B = B))
+  return(list(alpha = alpha_mat, B = B, iter = counter))
 }
 
 fitMultiKernel2 <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau) {
@@ -50,4 +60,8 @@ fitMultiKernel2 <- function(response, covariate, confounder = NULL, kernel = c("
   out <- multiKernel_cpp(response, Z_mat, K, tau)
   
   return(out)
+}
+
+computeLeastSq <- function(Y, K, alpha, Z, B) {
+  - 0.5 * norm(Y - K %*% alpha - Z %*% B, type = "F")
 }
