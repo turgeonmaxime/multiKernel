@@ -12,8 +12,8 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
   n <- nrow(response); p <- ncol(response)
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
   
-  alpha_mat <- matrix(0, nrow = n, ncol = p)
-  B <- matrix(0, nrow=ncol(Z_mat), ncol=p)
+  # alpha_mat <- matrix(0, nrow = n, ncol = p)
+  # B <- matrix(0, nrow=ncol(Z_mat), ncol=p)
   
   # K <- NULL
   kernel <- match.arg(kernel)
@@ -24,24 +24,27 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
   
   weight_mat <- solve(K + diag(tau, ncol = n, nrow = n))
   
-  currentLS <- 1
-  newLS <- 0
+  B <- solve(crossprod(Z_mat, weight_mat %*% Z_mat)) %*% crossprod(Z_mat, weight_mat) %*% response
+  alpha_mat <- weight_mat %*% (response - Z_mat %*% B)
+  
+  # currentLS <- 1
+  # newLS <- 0
   counter <- 0
-  while(counter < 10000 && abs(currentLS - newLS) > 1e-8) {
-    counter <- counter + 1
-    currentLS <- newLS
-    
-    # Update B
-    B <- lm.fit(x = Z_mat, y = (response - K %*% alpha_mat))$coefficients
-    
-    # Update alpha_mat
-    for (j in 1:p) {
-      alpha_mat[, j] <- weight_mat %*% (response[, j] - Z_mat %*% B[, j])
-    }
-    
-    newLS <- computeLeastSq(response, K, alpha_mat, Z_mat, B)
-    
-  }
+  # while(counter < 10000 && abs(currentLS - newLS) > 1e-8) {
+  #   counter <- counter + 1
+  #   currentLS <- newLS
+  #   
+  #   # Update B
+  #   B <- lm.fit(x = Z_mat, y = (response - K %*% alpha_mat))$coefficients
+  #   
+  #   # Update alpha_mat
+  #   for (j in 1:p) {
+  #     alpha_mat[, j] <- weight_mat %*% (response[, j] - Z_mat %*% B[, j])
+  #   }
+  #   
+  #   newLS <- computeLeastSq(response, K, alpha_mat, Z_mat, B)
+  #   
+  # }
   
   return(list(alpha = alpha_mat, B = B, iter = counter))
 }

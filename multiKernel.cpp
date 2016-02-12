@@ -19,9 +19,9 @@ SEXP multiKernel(SEXP Ys, SEXP Zs, SEXP Ks, double tau) {
   arma::mat Z(Zr.begin(), n, q, false);
   
   // Initialize matrices
-  arma::mat Q, R;
-  arma::mat B(q, p, fill::ones);
-  arma::mat alpha_mat(n, p, fill::zeros);
+  // arma::mat Q, R;
+  // arma::mat B(q, p, fill::ones);
+  // arma::mat alpha_mat(n, p, fill::zeros);
   arma::vec tuning_vect(n);
   tuning_vect.fill(tau);
   arma::mat tuning_mat(n, n, fill::zeros);
@@ -29,25 +29,29 @@ SEXP multiKernel(SEXP Ys, SEXP Zs, SEXP Ks, double tau) {
   arma::mat weight_mat = inv(K + tuning_mat);
   
   // Initialize loss value
-  double currentLS = 1.0;
-  double newLS = 0.0;
+  // double currentLS = 1.0;
+  // double newLS = 0.0;
   int counter = 0;
   
-  while(fabs(currentLS - newLS) > 0.00000001 && counter < 10000) {
-    counter++;
-    currentLS = newLS;
-    // Update B using QR-decomposition
-    qr_econ(Q, R, Z);
-    B = inv(R) * trans(Q) * (Y - K * alpha_mat);
-
-    // Update alpha_mat
-    for(int j = 0; j < p; j++) {
-      alpha_mat.col(j) = weight_mat * (Y.col(j) - Z * B.col(j));
-    }
-    
-    newLS = computeLeastSq(Y, K, alpha_mat, Z, B);
-  }
+  arma::mat B = inv(trans(Z) * weight_mat * Z) * trans(Z) * weight_mat * Y;
+  arma::mat alpha_mat = weight_mat * (Y - Z * B);
   
+  // while(fabs(currentLS - newLS) > 0.00000001 && counter < 10000) {
+  //   counter++;
+  //   currentLS = newLS;
+  //   // Update B using QR-decomposition
+  //   qr_econ(Q, R, Z);
+  //   B = inv(R) * trans(Q) * (Y - K * alpha_mat);
+  // 
+  //   // Update alpha_mat
+  //   for(int j = 0; j < p; j++) {
+  //     alpha_mat.col(j) = weight_mat * (Y.col(j) - Z * B.col(j));
+  //   }
+  //   
+  //   newLS = computeLeastSq(Y, K, alpha_mat, Z, B);
+  // }
+  
+  double newLS = computeLeastSq(Y, K, alpha_mat, Z, B);
   double BIC = 2 * newLS + log(n) * as_scalar(accu(B > 0) + accu(alpha_mat > 0));
   
   return Rcpp::List::create(
