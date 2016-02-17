@@ -136,14 +136,16 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
 selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau_seq, K = 5, pure = FALSE) {
   
   predError_vect <- vector("numeric", length(tau_seq))
+  predError_mat <- matrix(NA, nrow=K, ncol=length(tau_seq))
   names(predError_vect) <- tau_seq
   for (tau in tau_seq) {
     out <- cvMultiKernel(response, covariate, confounder, kernel, tau, K, pure)
     predError_vect[as.character(tau)] <- out$predErr
+    predError_mat[, tau_seq == tau] <- out[[2]]
   }
   
   tau_opt <- tau_seq[which.min(predError_vect)]
   out <- fitMultiKernel(response, covariate, confounder, kernel, tau_opt, pure)
   
-  return(list(tau_opt, predError_vect, out))
+  return(list(tau_opt, predError_vect, predError_mat, out))
 }

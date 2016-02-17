@@ -1,5 +1,5 @@
 # Try out the algorithm on a toy example----
-p <- 100; q <- 10; n <- 500
+p <- 10; q <- 100; n <- 500
 Y <- matrix(rnorm(p * n), nrow = n)
 X <- matrix(rnorm(q * n), nrow = n)
 Z <- matrix(1, nrow = n, ncol = 1)
@@ -31,5 +31,14 @@ set.seed(12345)
 cvMultiKernel(Y, X, tau = 1, pure=FALSE)
 
 # Selection of optimal tuning parameter
+set.seed(12)
 foo1 <- selectMultiKernel(Y, X, tau_seq = seq(0.1, 1, length.out = 10), pure=TRUE)
+set.seed(12)
 foo2 <- selectMultiKernel(Y, X, tau_seq = seq(0.1, 1, length.out = 10), pure=FALSE)
+
+foo <- selectMultiKernel(Y, X, tau_seq = seq(1, 50, length.out = 50), K=10, pure=FALSE)
+plot(seq(1, 50, length.out = 50), foo[[2]], type='b', pch=19, cex=0.5,
+     xlab="tau", ylab="Prediction error")
+boxplot(foo[[3]])
+lines(seq(1, 50, length.out = 50), foo[[2]], type='b', pch=19, cex=0.5, col='blue', lwd=2)
+lines(seq(1, 50, length.out = 50), apply(foo[[3]], 2, median), type='b', pch=19, cex=0.5, col='red', lwd=2)
