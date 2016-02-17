@@ -29,5 +29,9 @@ which.min(sapply(foo2, function(list) list$LS))
 tau <- 1; K <- linearKernel(X)
 beta <- solve(t(Z) %*% solve(K + diag(tau, ncol = n, nrow = n)) %*% Z) %*% t(Z) %*% solve(K + diag(tau, ncol = n, nrow = n)) %*% Y
 alpha <- solve(K + diag(tau, ncol = n, nrow = n)) %*% (Y - Z %*% beta)
-
 # No, we don't...
+
+set.seed(12345)
+cvMultiKernel(Y, X, tau = 1, pure=TRUE)
+set.seed(12345)
+cvMultiKernel(Y, X, tau = 1, pure=FALSE)
