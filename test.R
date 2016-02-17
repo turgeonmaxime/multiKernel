@@ -18,20 +18,18 @@ compare <- microbenchmark(fitMultiKernel(Y, X, tau = 1),
                           times = 100)
 compare
 
-# Cross-validation---
-foo1 <- selectMultiKernel(Y, X, tau_seq = seq(0.1, 1, length.out = 10))
-which.min(sapply(foo1, function(list) list$LS))
-
-foo2 <- selectMultiKernel2(Y, X, tau_seq = seq(0.1, 1, length.out = 10))
-which.min(sapply(foo2, function(list) list$LS))
-
 # Do we need while loop?
 tau <- 1; K <- linearKernel(X)
 beta <- solve(t(Z) %*% solve(K + diag(tau, ncol = n, nrow = n)) %*% Z) %*% t(Z) %*% solve(K + diag(tau, ncol = n, nrow = n)) %*% Y
 alpha <- solve(K + diag(tau, ncol = n, nrow = n)) %*% (Y - Z %*% beta)
 # No, we don't...
 
+# Cross-validation---
 set.seed(12345)
 cvMultiKernel(Y, X, tau = 1, pure=TRUE)
 set.seed(12345)
 cvMultiKernel(Y, X, tau = 1, pure=FALSE)
+
+# Selection of optimal tuning parameter
+foo1 <- selectMultiKernel(Y, X, tau_seq = seq(0.1, 1, length.out = 10), pure=TRUE)
+foo2 <- selectMultiKernel(Y, X, tau_seq = seq(0.1, 1, length.out = 10), pure=FALSE)

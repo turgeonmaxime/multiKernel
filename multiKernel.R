@@ -67,7 +67,7 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
 #' @param tau Tuning parameter.
 #' @param K number of folds for cross-validation.
 #' @param pure Logical. Use the pure R version?
-#' @return Returns a list of kernel predictors, indexed by the different values of tau.
+#' @return Returns the estimated prediction error, as well as a separate value for each fold
 cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau, K = 5, pure = FALSE) {
   n <- nrow(response); p <- ncol(response)
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
@@ -120,78 +120,30 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
 #' Selection of tuning parameter for multivariate kernel regression
 #' 
 #' This function performs cross-validation for multivariate kernel regression
+#' and selects the optimal tuning parameter among a user-specified collection
 #' 
 #' @param response matrix of response variables
-#' @param covariate matrix of covariate variables, which are included in the kernel.
-#' @param confounder matrix or data.frame of confounder variables, which are not included in the kernel.
+#' @param covariate matrix of covariate variables, which are included in the
+#'   kernel.
+#' @param confounder matrix or data.frame of confounder variables, which are not
+#'   included in the kernel.
 #' @param kernel Type of kernel to use.
 #' @param tau_seq Sequence of tuning parameters.
-#' @return Returns a list of kernel predictors, indexed by the different values of tau.
-selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau_seq) {
-  n <- nrow(response); p <- ncol(response)
-  if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
+#' @param K number of folds for cross-validation.
+#' @param pure Logical. Use the pure R version?
+#' @return Returns a list of kernel predictors, indexed by the different values
+#'   of tau.
+selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau_seq, K = 5, pure = FALSE) {
   
-  alpha_mat <- matrix(0, nrow = n, ncol = p)
-  B <- matrix(0, nrow=ncol(Z_mat), ncol=p)
-  
-  # K <- NULL
-  kernel <- match.arg(kernel)
-  if(kernel == "linear") K <- linearKernel(X)
-  if(kernel == "quadratic") K <- quadraticKernel(X)
-  if(kernel == "gaussian") K <- gaussKernel(X)
-  # if(is.null(K)) stop("The requested kernel has not been implemented.")
-  
-  output_list <- vector("list", length(tau_seq))
-  names(output_list) <- tau_seq
+  predError_vect <- vector("numeric", length(tau_seq))
+  names(predError_vect) <- tau_seq
   for (tau in tau_seq) {
-    weight_mat <- solve(K + diag(tau, ncol = n, nrow = n))
-    
-    currentLS <- 1
-    newLS <- 0
-    counter <- 0
-    while(counter < 10000 && abs(currentLS - newLS) > 1e-8) {
-      counter <- counter + 1
-      currentLS <- newLS
-      
-      # Update B
-      B <- lm.fit(x = Z_mat, y = (response - K %*% alpha_mat))$coefficients
-      
-      # Update alpha_mat
-      for (j in 1:p) {
-        alpha_mat[, j] <- weight_mat %*% (response[, j] - Z_mat %*% B[, j])
-      }
-      
-      newLS <- computeLeastSq(response, K, alpha_mat, Z_mat, B)
-      
-    }
-    
-    output_list[[which(tau_seq == tau)]] <- list(alpha = alpha_mat, 
-                                                 B = B, 
-                                                 iter = counter,
-                                                 LS = newLS,
-                                                 BIC = 2 * newLS + log(n) * (sum(B > 0) + sum(alpha_mat > 0)))
+    out <- cvMultiKernel(response, covariate, confounder, kernel, tau, K, pure)
+    predError_vect[as.character(tau)] <- out$predErr
   }
   
-  return(output_list)
-}
-
-selectMultiKernel2 <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau_seq) {
-  n <- nrow(response); p <- ncol(response)
-  if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
+  tau_opt <- tau_seq[which.min(predError_vect)]
+  out <- fitMultiKernel(response, covariate, confounder, kernel, tau_opt, pure)
   
-  # K <- NULL
-  kernel <- match.arg(kernel)
-  if(kernel == "linear") K <- linearKernel(X)
-  if(kernel == "quadratic") K <- quadraticKernel(X)
-  if(kernel == "gaussian") K <- gaussKernel(X)
-  # if(is.null(K)) stop("The requested kernel has not been implemented.")
-  
-  output_list <- vector("list", length(tau_seq))
-  names(output_list) <- tau_seq
-  for (tau in tau_seq) {
-    out <- multiKernel_cpp(response, Z_mat, K, tau)
-    output_list[[which(tau_seq == tau)]] <- out
-  }
-  
-  return(output_list)
+  return(list(tau_opt, predError_vect, out))
 }
