@@ -16,15 +16,13 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
   n <- nrow(response); p <- ncol(response)
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
   
-  # alpha_mat <- matrix(0, nrow = n, ncol = p)
-  # B <- matrix(0, nrow=ncol(Z_mat), ncol=p)
-  
-  # Kmat <- NULL
   kernel <- match.arg(kernel)
-  if(kernel == "linear") Kmat <- linearKernel(covariate)
-  if(kernel == "quadratic") Kmat <- quadraticKernel(covariate)
-  if(kernel == "gaussian") Kmat <- gaussKernel(covariate)
-  # if(is.null(Kmat)) stop("The requested kernel has not been implemented.")
+  Kmat <- switch(kernel,
+                 linear = linearKernel(X),
+                 quadratic = quadraticKernel(X),
+                 gaussian = gaussKernel(X),
+                 stop("The requested kernel has not been implemented.", 
+                      call. = FALSE))
   
   if (pure) {
     weight_mat <- solve(Kmat + diag(tau, ncol = n, nrow = n))
@@ -58,12 +56,13 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
   n <- nrow(response); p <- ncol(response)
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
   
-  # K_mat <- NULL
   kernel <- match.arg(kernel)
-  if(kernel == "linear") compKernel <- linearKernel
-  if(kernel == "quadratic") compKernel <- quadraticKernel
-  if(kernel == "gaussian") compKernel <- gaussKernel
-  # if(is.null(Kmat)) stop("The requested kernel has not been implemented.")
+  compKernel <- switch(kernel,
+                       linear = linearKernel,
+                       quadratic = quadraticKernel,
+                       gaussian = gaussKernel,
+                       stop("The requested kernel has not been implemented.", 
+                            call. = FALSE))
   
   # create folds for CV
   folds <- createFold(response, K)
