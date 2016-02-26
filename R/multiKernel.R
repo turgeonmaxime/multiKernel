@@ -9,6 +9,9 @@
 #' @param tau Tuning parameter.
 #' @param pure Logical. Use the pure R version?
 #' @return Returns the kernel predictor.
+#' @export
+#' @useDynLib multiKernel
+#' @importFrom Rcpp sourceCpp
 fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau, pure=FALSE) {
   n <- nrow(response); p <- ncol(response)
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
@@ -29,25 +32,7 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
     B <- solve(crossprod(Z_mat, weight_mat %*% Z_mat)) %*% crossprod(Z_mat, weight_mat) %*% response
     alpha_mat <- weight_mat %*% (response - Z_mat %*% B)
     
-    # currentLS <- 1
-    # newLS <- 0
-    counter <- 0
-    # while(counter < 10000 && abs(currentLS - newLS) > 1e-8) {
-    #   counter <- counter + 1
-    #   currentLS <- newLS
-    #   
-    #   # Update B
-    #   B <- lm.fit(x = Z_mat, y = (response - K %*% alpha_mat))$coefficients
-    #   
-    #   # Update alpha_mat
-    #   for (j in 1:p) {
-    #     alpha_mat[, j] <- weight_mat %*% (response[, j] - Z_mat %*% B[, j])
-    #   }
-    #   
-    #   newLS <- computeLeastSq(response, Kmat, alpha_mat, Z_mat, B)
-    #   
-    # }
-    out <- list(alpha = alpha_mat, B = B, iter = counter)
+    out <- list(alpha = alpha_mat, B = B)
     
   } else {
     out <- multiKernel_cpp(response, Z_mat, Kmat, tau)
@@ -68,6 +53,7 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
 #' @param K number of folds for cross-validation.
 #' @param pure Logical. Use the pure R version?
 #' @return Returns the estimated prediction error, as well as a separate value for each fold
+#' @export
 cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau, K = 5, pure = FALSE) {
   n <- nrow(response); p <- ncol(response)
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
@@ -81,8 +67,7 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
   
   # create folds for CV
   folds <- createFold(response, K)
-  
-  predErr_vect <- rep_len(NA, K)
+  fitted_values <- matrix(NA, nrow=n, ncol=p)
   
   for (i in 1:K) {
     # Training data
@@ -109,12 +94,10 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
     Z_mat_test <- Z_mat[unlist(folds[i]), , drop=FALSE]
     
     Kmat_test <- compKernel(covariate_train, covariate_test)
-    prediction <- crossprod(Kmat_test, out$alpha) + Z_mat_test %*% out$B
-    
-    predErr_vect[i] <- norm(response_test - prediction, type = "F")^2
+    fitted_values[unlist(folds[i]),] <- crossprod(Kmat_test, out$alpha) + Z_mat_test %*% out$B
   }
   
-  return(list(predErr = mean(predErr_vect), predErr_vect))
+  return(list(predErr = mean((response - fitted_values)^2), fitted_values=fitted_values))
 }
 
 #' Selection of tuning parameter for multivariate kernel regression
@@ -133,19 +116,21 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
 #' @param pure Logical. Use the pure R version?
 #' @return Returns a list of kernel predictors, indexed by the different values
 #'   of tau.
+#' @export
 selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau_seq, K = 5, pure = FALSE) {
   
   predError_vect <- vector("numeric", length(tau_seq))
-  predError_mat <- matrix(NA, nrow=K, ncol=length(tau_seq))
-  names(predError_vect) <- tau_seq
+  fitted_list <- vector("list", length(tau_seq))
+  names(predError_vect) <- names(fitted_list) <- tau_seq
+  
   for (tau in tau_seq) {
     out <- cvMultiKernel(response, covariate, confounder, kernel, tau, K, pure)
     predError_vect[as.character(tau)] <- out$predErr
-    predError_mat[, tau_seq == tau] <- out[[2]]
+    fitted_list[[as.character(tau)]] <- out$fitted_values
   }
   
   tau_opt <- tau_seq[which.min(predError_vect)]
   out <- fitMultiKernel(response, covariate, confounder, kernel, tau_opt, pure)
   
-  return(list(tau_opt, predError_vect, predError_mat, out))
+  return(list(tau_opt, predError_vect, predError_mat, fitted_list, out))
 }

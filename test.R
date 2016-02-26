@@ -26,7 +26,7 @@ alpha <- solve(K + diag(tau, ncol = n, nrow = n)) %*% (Y - Z %*% beta)
 
 # Cross-validation---
 set.seed(12345)
-cvMultiKernel(Y, X, tau = 1, pure=TRUE)
+foo1 <- cvMultiKernel(Y, X, tau = 1, pure=TRUE)
 set.seed(12345)
 cvMultiKernel(Y, X, tau = 1, pure=FALSE)
 
@@ -42,3 +42,6 @@ plot(seq(1, 50, length.out = 50), foo[[2]], type='b', pch=19, cex=0.5,
 boxplot(foo[[3]])
 lines(seq(1, 50, length.out = 50), foo[[2]], type='b', pch=19, cex=0.5, col='blue', lwd=2)
 lines(seq(1, 50, length.out = 50), apply(foo[[3]], 2, median), type='b', pch=19, cex=0.5, col='red', lwd=2)
+
+pred_errors <- lapply(foo1[[4]], function(mat) mat - Y)
+sapply(pred_errors, function(mat) mean(mat^2))
