@@ -60,6 +60,7 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
 #' @param covariate matrix of covariate variables, which are included in the kernel.
 #' @param confounder matrix or data.frame of confounder variables, which are not included in the kernel.
 #' @param kernel Type of kernel to use.
+#' @param intercept Should we include an intercept?
 #' @param tau Tuning parameter.
 #' @param K number of folds for cross-validation.
 #' @param pure Logical. Use the pure R version?
@@ -126,13 +127,15 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
 #' @param confounder matrix or data.frame of confounder variables, which are not
 #'   included in the kernel.
 #' @param kernel Type of kernel to use.
+#' @param intercept Should we include an intercept?
 #' @param tau_seq Sequence of tuning parameters.
 #' @param K number of folds for cross-validation.
 #' @param pure Logical. Use the pure R version?
 #' @return Returns a list of kernel predictors, indexed by the different values
 #'   of tau.
 #' @export
-selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), tau_seq, K = 5, pure = FALSE) {
+selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), intercept = TRUE, 
+                              tau_seq, K = 5, pure = FALSE) {
   
   predError_vect <- vector("numeric", length(tau_seq))
   fitted_list <- vector("list", length(tau_seq))

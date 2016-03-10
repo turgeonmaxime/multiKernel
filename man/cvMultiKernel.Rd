@@ -16,6 +16,8 @@ cvMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
 
 \item{kernel}{Type of kernel to use.}
 
+\item{intercept}{Should we include an intercept?}
+
 \item{tau}{Tuning parameter.}
 
 \item{K}{number of folds for cross-validation.}

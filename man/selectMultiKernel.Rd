@@ -5,8 +5,8 @@
 \title{Selection of tuning parameter for multivariate kernel regression}
 \usage{
 selectMultiKernel(response, covariate, confounder = NULL,
-  kernel = c("linear", "quadratic", "gaussian"), tau_seq, K = 5,
-  pure = FALSE)
+  kernel = c("linear", "quadratic", "gaussian"), intercept = TRUE, tau_seq,
+  K = 5, pure = FALSE)
 }
 \arguments{
 \item{response}{matrix of response variables}
@@ -18,6 +18,8 @@ kernel.}
 included in the kernel.}
 
 \item{kernel}{Type of kernel to use.}
+
+\item{intercept}{Should we include an intercept?}
 
 \item{tau_seq}{Sequence of tuning parameters.}
 
