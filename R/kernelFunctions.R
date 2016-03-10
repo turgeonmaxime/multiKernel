@@ -5,6 +5,7 @@
 #' @param X_test matrix of test covariates
 #' @return Gram matrix for specified kernel
 #' @export
+#' @importFrom kernlab kernelMatrix
 linearKernel <- function(X, X_test = X) {	
   tcrossprod(X_test, X) 
 }
@@ -38,14 +39,16 @@ IBSkernel <- function(X, X_test = X) {
 #' @param rho scaling parameter
 #' @rdname linearKernel
 #' @export
+#' @importFrom kernlab rbfdot
 gaussKernel <- function(X, X_test = X, rho = 1) {
-  Kmat <- matrix(NA, nrow=nrow(X), ncol=nrow(X))
-  
-  for (i in 1:nrow(X)){
-    Kmat[i,] <- diag(tcrossprod(X_test - X_test[i,],
-                                X - X[i,]))
-    
-  }
-  
-  return(exp(-Kmat/rho))
+  # Kmat <- matrix(NA, nrow=nrow(X), ncol=nrow(X))
+  # 
+  # for (i in 1:nrow(X)){
+  #   Kmat[i,] <- diag(tcrossprod(X_test - X_test[i,],
+  #                               X - X[i,]))
+  #   
+  # }
+  # 
+  # return(exp(-Kmat/rho))
+  kernelMatrix(rbfdot(rho), X_test, X)@.Data
 }

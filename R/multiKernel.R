@@ -110,7 +110,7 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
     
     # Kmat_test <- compKernel(covariate_train, covariate_test)
     # fitted_values[unlist(folds[i]),] <- (Kmat_test %*% out$alpha) + Z_mat_test %*% out$B
-    fitted_values[unlist(folds[i]),] <- predict(out, response_test, covariate_test, confounder_test)
+    fitted_values[unlist(folds[i]),] <- predict(out, covariate_test, confounder_test)
   }
   
   return(list(predErr = mean((response - fitted_values)^2), fitted_values=fitted_values))
@@ -142,13 +142,13 @@ selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c
   names(predError_vect) <- names(fitted_list) <- tau_seq
   
   for (tau in tau_seq) {
-    out <- cvMultiKernel(response, covariate, confounder, kernel, tau, K, pure)
+    out <- cvMultiKernel(response, covariate, confounder, kernel, intercept, tau, K, pure)
     predError_vect[as.character(tau)] <- out$predErr
     fitted_list[[as.character(tau)]] <- out$fitted_values
   }
   
   tau_opt <- tau_seq[which.min(predError_vect)]
-  out <- fitMultiKernel(response, covariate, confounder, kernel, tau_opt, pure)
+  out <- fitMultiKernel(response, covariate, confounder, kernel, intercept, tau_opt, pure)
   
   return(list(tau_opt, predError_vect, fitted_list, out))
 }
