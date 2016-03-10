@@ -6,14 +6,14 @@
 #' @return Gram matrix for specified kernel
 #' @export
 linearKernel <- function(X, X_test = X) {	
-  tcrossprod(X, X_test) 
+  tcrossprod(X_test, X) 
 }
 
 ### Quadratic kernel
 #' @rdname linearKernel
 #' @export 
 quadraticKernel <- function(X, X_test = X) { 
-  (1 + tcrossprod(X, X_test))^2
+  (1 + tcrossprod(X_test, X))^2
 }
 
 ### Identical by state (IBS) kernel
@@ -42,8 +42,8 @@ gaussKernel <- function(X, X_test = X, rho = 1) {
   Kmat <- matrix(NA, nrow=nrow(X), ncol=nrow(X))
   
   for (i in 1:nrow(X)){
-    Kmat[i,] <- diag(tcrossprod(X - X[i,],
-                                X_test - X_test[i,]))
+    Kmat[i,] <- diag(tcrossprod(X_test - X_test[i,],
+                                X - X[i,]))
     
   }
   

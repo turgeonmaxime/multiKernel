@@ -5,12 +5,11 @@ Authors@R: person("Maxime", "Turgeon",
   email = "maxime.turgeon@mail.mcgill.ca", role = c("aut", "cre"))
 Description: What the package does (one paragraph).
 Imports:
-  Rcpp
+    Rcpp
 Depends:
-  R (>= 3.2.3)
-LinkingTo: 
-  Rcpp,
-  RcppArmadillo
+    R (>= 3.2.3)
+LinkingTo: Rcpp,
+    RcppArmadillo
 License: GPL (>= 2)
 LazyData: true
-RoxygenNote: 5.0.1
+RoxygenNote: 5.0.1.9000

@@ -5,7 +5,7 @@
 \title{Multivariate kernel regression}
 \usage{
 fitMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
-  "quadratic", "gaussian"), tau, pure = FALSE)
+  "quadratic", "gaussian"), intercept = TRUE, tau, pure = FALSE)
 }
 \arguments{
 \item{response}{matrix of response variables}
@@ -15,6 +15,8 @@ fitMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
 \item{confounder}{matrix or data.frame of confounder variables, which are not included in the kernel.}
 
 \item{kernel}{Type of kernel to use.}
+
+\item{intercept}{Should we include an intercept?}
 
 \item{tau}{Tuning parameter.}
 

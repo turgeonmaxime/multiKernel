@@ -5,7 +5,7 @@
 \title{Cross-validation for multivariate kernel regression}
 \usage{
 cvMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
-  "quadratic", "gaussian"), tau, K = 5, pure = FALSE)
+  "quadratic", "gaussian"), intercept = TRUE, tau, K = 5, pure = FALSE)
 }
 \arguments{
 \item{response}{matrix of response variables}
