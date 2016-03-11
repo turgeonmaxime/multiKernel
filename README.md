@@ -11,3 +11,5 @@ This package can be directly installed from GitHub using the [devtools](http://c
 library(devtools)
 devtools::install_github('turgeonmaxime/multiKernel')
 ```
+
+However, you should be aware that, even though the fitting functions are most probably correct, my implementation of cross-validation is most probably wrong.
