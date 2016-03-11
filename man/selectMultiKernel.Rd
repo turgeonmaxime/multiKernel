@@ -6,7 +6,7 @@
 \usage{
 selectMultiKernel(response, covariate, confounder = NULL,
   kernel = c("linear", "quadratic", "gaussian"), intercept = TRUE, tau_seq,
-  K = 5, pure = FALSE)
+  K = 5, pure = FALSE, ...)
 }
 \arguments{
 \item{response}{matrix of response variables}
@@ -26,6 +26,8 @@ included in the kernel.}
 \item{K}{number of folds for cross-validation.}
 
 \item{pure}{Logical. Use the pure R version?}
+
+\item{...}{Extra parameters to be passed to the kernel function.}
 }
 \value{
 Returns a list of kernel predictors, indexed by the different values

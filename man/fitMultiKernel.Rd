@@ -2,17 +2,19 @@
 % Please edit documentation in R/multiKernel.R
 \name{fitMultiKernel}
 \alias{fitMultiKernel}
-\title{Multivariate kernel regression}
+\title{Multivariate kernel-machine regression}
 \usage{
 fitMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
-  "quadratic", "gaussian"), intercept = TRUE, tau, pure = FALSE)
+  "quadratic", "gaussian"), intercept = TRUE, tau, pure = FALSE, ...)
 }
 \arguments{
 \item{response}{matrix of response variables}
 
-\item{covariate}{matrix of covariate variables, which are included in the kernel.}
+\item{covariate}{matrix of covariate variables, which are included in the
+kernel.}
 
-\item{confounder}{matrix or data.frame of confounder variables, which are not included in the kernel.}
+\item{confounder}{matrix or data.frame of confounder variables, which are not
+included in the kernel.}
 
 \item{kernel}{Type of kernel to use.}
 
@@ -21,11 +23,19 @@ fitMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
 \item{tau}{Tuning parameter.}
 
 \item{pure}{Logical. Use the pure R version?}
+
+\item{...}{Extra parameters to be passed to the kernel function.}
 }
 \value{
 Returns the kernel predictor.
 }
 \description{
-This function performs multivariate kernel regression by minimizing a specific loss function
+This function performs multivariate kernel-machine regression by minimizing a
+specific loss function
+}
+\details{
+If \code{confounder = NULL}, \code{intercept = FALSE}, and \code{response}
+contains only one response variable, then this is equivalent to kernel ridge
+regression.
 }
 

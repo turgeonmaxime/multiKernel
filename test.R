@@ -45,7 +45,7 @@ foo <- selectMultiKernel(Y, X, tau_seq = tau_seq,
 predErr <- rep_len(NA, length(tau_seq))
 for (i in 1:length(tau_seq)) {
   out <- fitMultiKernel(Y, X, intercept = TRUE, kernel = "linear", tau = tau_seq[i], pure=FALSE)
-  pred <- multiKernel:::predict.multiKernel(out, X_test)
+  pred <- predict(out, X_test)
   predErr[i] <-  mean((pred - Y_test)^2)
 }
 
@@ -76,18 +76,18 @@ n <- getN(ns)
 Kmat <- linearKernel(ns$x)
 for (lam in lambda_vect) {
   index <- index + 1
-  foo <- krr$learn(ns, list(kernel="vanilladot", lambda=lam))
+  foo <- krr$learn(ns, list(kernel="rbfdot", lambda=lam))
   pred <- krr$predict(foo, nsTest)
   m[index] <- sum((pred - nsTest$y)^2) / getN(nsTest)
   
   out <- fitMultiKernel(as.matrix(ns$y), ns$x, intercept = FALSE, kernel = "gaussian", tau = lam * n, pure=FALSE)
-  pred <- multiKernel:::predict.multiKernel(out, nsTest$x)
+  pred <- predict(out, nsTest$x)
   # pred <- t(foo$alpha) %*% t(K)
   m2[index] <- sum((pred - nsTest$y)^2) / getN(nsTest)
 }
 plot(m, m2)
 plot(x=lambda_vect, y=m, type='b', pch=19, cex=0.5, ylim=range(c(m, m2[-1])))
-lines(x=lambda_vect[-1], y=m2[-1], type='b', pch=19, cex=0.5, col='blue')
+lines(x=lambda_vect, y=m2, type='b', pch=19, cex=0.5, col='blue')
 cv_out <- CV(ns, krr, constructParams(kernel="rbfdot", sigma=100, lambda=lambda_vect), fold = 10, verbose = TRUE)
 
 fit <- fitMultiKernel(as.matrix(ns$y), ns$x, tau = getN(ns) *lambda_vect[1], intercept = FALSE)

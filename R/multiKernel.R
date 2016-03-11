@@ -1,20 +1,29 @@
-#' Multivariate kernel regression
+#' Multivariate kernel-machine regression
 #' 
-#' This function performs multivariate kernel regression by minimizing a specific loss function
+#' This function performs multivariate kernel-machine regression by minimizing a
+#' specific loss function
+#' 
+#' If \code{confounder = NULL}, \code{intercept = FALSE}, and \code{response}
+#' contains only one response variable, then this is equivalent to kernel ridge
+#' regression.
 #' 
 #' @param response matrix of response variables
-#' @param covariate matrix of covariate variables, which are included in the kernel.
-#' @param confounder matrix or data.frame of confounder variables, which are not included in the kernel.
+#' @param covariate matrix of covariate variables, which are included in the
+#'   kernel.
+#' @param confounder matrix or data.frame of confounder variables, which are not
+#'   included in the kernel.
 #' @param kernel Type of kernel to use.
 #' @param intercept Should we include an intercept?
 #' @param tau Tuning parameter.
 #' @param pure Logical. Use the pure R version?
+#' @param ... Extra parameters to be passed to the kernel function.
 #' @return Returns the kernel predictor.
 #' @export
 #' @useDynLib multiKernel
 #' @importFrom Rcpp sourceCpp
 fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), intercept = TRUE,
-                           tau, pure = FALSE) {
+                           tau, pure = FALSE, ...) {
+  response <- as.matrix(response)
   n <- nrow(response); p <- ncol(response)
   if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
   
@@ -22,14 +31,14 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
   Kmat <- switch(kernel,
                  linear = linearKernel(covariate),
                  quadratic = quadraticKernel(covariate),
-                 gaussian = gaussKernel(covariate),
+                 gaussian = gaussKernel(covariate, ...),
                  stop("The requested kernel has not been implemented.", 
                       call. = FALSE))
   
   if (pure) {
     weight_mat <- solve(Kmat + diag(tau, ncol = n, nrow = n))
     
-    if (intercept) {
+    if (intercept || !is.null(confounder)) {
       B <- solve(crossprod(Z_mat, weight_mat %*% Z_mat)) %*% crossprod(Z_mat, weight_mat) %*% response
       alpha_mat <- weight_mat %*% (response - Z_mat %*% B)
       out <- list(alpha = alpha_mat, B = B)
@@ -39,7 +48,7 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
     }
     
   } else {
-    if (intercept) {
+    if (intercept || !is.null(confounder)) {
       out <- multiKernel_cpp(response, Z_mat, Kmat, tau)
     } else {
       out <- multiKernel_noCon_cpp(response, Kmat, tau)
@@ -64,10 +73,11 @@ fitMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("l
 #' @param tau Tuning parameter.
 #' @param K number of folds for cross-validation.
 #' @param pure Logical. Use the pure R version?
+#' @param ... Extra parameters to be passed to the kernel function.
 #' @return Returns the estimated prediction error, as well as a separate value for each fold
 #' @export
 cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), intercept = TRUE, 
-                          tau, K = 5, pure = FALSE) {
+                          tau, K = 5, pure = FALSE, ...) {
   n <- nrow(response); p <- ncol(response)
   # if(is.null(confounder)) Z_mat <- matrix(1, nrow=n, ncol=1) else Z_mat <- model.matrix(~., as.data.frame(confounder))
   
@@ -75,7 +85,7 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
   compKernel <- switch(kernel,
                        linear = linearKernel,
                        quadratic = quadraticKernel,
-                       gaussian = gaussKernel,
+                       gaussian = function(t) gaussKernel(t, ...),
                        stop("The requested kernel has not been implemented.", 
                             call. = FALSE))
   
@@ -90,7 +100,7 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
     confounder_train <- confounder[unlist(folds[-i]),,drop=FALSE]
     
     # Kmat_train <- compKernel(covariate_train)
-    out <- fitMultiKernel(response_train, covariate_train, confounder_train, kernel, intercept, tau, pure)
+    out <- fitMultiKernel(response_train, covariate_train, confounder_train, kernel, intercept, tau, pure, ...)
     
     # if(pure) {
     #   n_train <- nrow(response_train)
@@ -131,24 +141,25 @@ cvMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("li
 #' @param tau_seq Sequence of tuning parameters.
 #' @param K number of folds for cross-validation.
 #' @param pure Logical. Use the pure R version?
+#' @param ... Extra parameters to be passed to the kernel function.
 #' @return Returns a list of kernel predictors, indexed by the different values
 #'   of tau.
 #' @export
 selectMultiKernel <- function(response, covariate, confounder = NULL, kernel = c("linear", "quadratic", "gaussian"), intercept = TRUE, 
-                              tau_seq, K = 5, pure = FALSE) {
+                              tau_seq, K = 5, pure = FALSE, ...) {
   
   predError_vect <- vector("numeric", length(tau_seq))
   fitted_list <- vector("list", length(tau_seq))
   names(predError_vect) <- names(fitted_list) <- tau_seq
   
   for (tau in tau_seq) {
-    out <- cvMultiKernel(response, covariate, confounder, kernel, intercept, tau, K, pure)
+    out <- cvMultiKernel(response, covariate, confounder, kernel, intercept, tau, K, pure, ...)
     predError_vect[as.character(tau)] <- out$predErr
     fitted_list[[as.character(tau)]] <- out$fitted_values
   }
   
   tau_opt <- tau_seq[which.min(predError_vect)]
-  out <- fitMultiKernel(response, covariate, confounder, kernel, intercept, tau_opt, pure)
+  out <- fitMultiKernel(response, covariate, confounder, kernel, intercept, tau_opt, pure, ...)
   
   return(list(tau_opt, predError_vect, fitted_list, out))
 }

@@ -5,7 +5,8 @@
 \title{Cross-validation for multivariate kernel regression}
 \usage{
 cvMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
-  "quadratic", "gaussian"), intercept = TRUE, tau, K = 5, pure = FALSE)
+  "quadratic", "gaussian"), intercept = TRUE, tau, K = 5, pure = FALSE,
+  ...)
 }
 \arguments{
 \item{response}{matrix of response variables}
@@ -23,6 +24,8 @@ cvMultiKernel(response, covariate, confounder = NULL, kernel = c("linear",
 \item{K}{number of folds for cross-validation.}
 
 \item{pure}{Logical. Use the pure R version?}
+
+\item{...}{Extra parameters to be passed to the kernel function.}
 }
 \value{
 Returns the estimated prediction error, as well as a separate value for each fold
